@@ -7,6 +7,8 @@ export enum Message {
   UPLOAD_FAILED = 'Yuklashda xatolik yuz berdi!',
   BAD_REQUEST = 'Notogri sorov!',
 
+  
+  USED_MEMBER_NICK_OR_PHONE = 'Already used member nick or phone',
   NO_MEMBER_NICK = 'Bunday nicknamega ega foydalanuvchi topilmadi!',
   BLOCKED_USER = 'Siz bloklangansiz!',
   WRONG_PASSWORD = 'Parol notogri, qayta urinib koring!',
