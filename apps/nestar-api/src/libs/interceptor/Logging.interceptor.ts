@@ -15,6 +15,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
             /* Develop if needed! */
             /* Zarur bo‘lsa shu qism keyin to‘ldiriladi! */
+			return next.handle().pipe();
 		if (requestType === 'graphql') {
             /* (1) Print Request */
             /* (1) So‘rovni chiqarish */
