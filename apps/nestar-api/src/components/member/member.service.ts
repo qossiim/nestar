@@ -8,7 +8,7 @@ import { Member, Members } from '../../libs/dto/member/member';
 import { AuthService } from '../auth/auth.service';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { T } from '../../libs/types/common';
+import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
 
 @Injectable()
@@ -158,4 +158,18 @@ public async login(input: LoginInput): Promise<Member> {
 	return result;
 }
 
+public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
+	const { _id, targetKey, modifier } = input;
+
+	const result = await this.memberModel
+		.findByIdAndUpdate(
+			_id,
+			{ $inc: { [targetKey]: modifier } },
+			{ new: true },
+		)
+		.exec();
+
+	if (!result) throw new Error('Member not found');
+	return result;
+}
 }
