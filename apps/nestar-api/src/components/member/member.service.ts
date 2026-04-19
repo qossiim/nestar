@@ -160,7 +160,7 @@ public async login(input: LoginInput): Promise<Member> {
 
 public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
 	const { _id, targetKey, modifier } = input;
-
+ 
 	const result = await this.memberModel
 		.findByIdAndUpdate(
 			_id,

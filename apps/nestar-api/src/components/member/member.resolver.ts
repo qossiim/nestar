@@ -164,5 +164,5 @@ public async imagesUploader(
 
 	await Promise.all(promisedList);
 	return uploadedImages;
-}
+} 
 }
