@@ -71,28 +71,37 @@ public async login(input: LoginInput): Promise<Member> {
 	return result;
 }
 
-	public async getMember(memberId: ObjectId, targetId: ObjectId): Promise<Member> {
-		const search: T = {
-			_id: targetId,
-			memberStatus: {
-				$in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
-			},
+	public async getMember(memberId: ObjectId | null, targetId: ObjectId): Promise<Member> {
+	const search: T = {
+		_id: targetId,
+		memberStatus: {
+			$in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
+		},
+	};
+
+	const targetMember = await this.memberModel.findOne(search).lean().exec();
+
+	if (!targetMember) {
+		throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+	}
+
+	if (memberId) {
+		const viewInput = {
+			memberId: memberId,
+			viewRefId: targetId,
+			viewGroup: ViewGroup.MEMBER,
 		};
 
-		const targetMember = await this.memberModel.findOne(search).lean().exec();
-		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		const newView = await this.viewService.recordView(viewInput);
 
-		if (memberId) {
-			const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER };
-			const newView = await this.viewService.recordView(viewInput);
-			if (newView) {
-				await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
-				targetMember.memberViews++;
-			}
+		if (newView) {
+			await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
+			targetMember.memberViews++;
 		}
-
-		return targetMember;
 	}
+
+	return targetMember as Member;
+}
 	
 	public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
 		const { text } = input.search;
@@ -160,7 +169,11 @@ public async login(input: LoginInput): Promise<Member> {
 
 public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
 	const { _id, targetKey, modifier } = input;
- 
+
+	if (!_id) {
+		throw new BadRequestException(Message.NO_DATA_FOUND);
+	}
+
 	const result = await this.memberModel
 		.findByIdAndUpdate(
 			_id,
@@ -169,7 +182,10 @@ public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
 		)
 		.exec();
 
-	if (!result) throw new Error('Member not found');
+	if (!result) {
+		throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+	}
+
 	return result;
 }
 }
