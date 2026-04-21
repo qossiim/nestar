@@ -72,36 +72,27 @@ public async login(input: LoginInput): Promise<Member> {
 }
 
 	public async getMember(memberId: ObjectId | null, targetId: ObjectId): Promise<Member> {
-	const search: T = {
-		_id: targetId,
-		memberStatus: {
-			$in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
-		},
-	};
-
-	const targetMember = await this.memberModel.findOne(search).lean().exec();
-
-	if (!targetMember) {
-		throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-	}
-
-	if (memberId) {
-		const viewInput = {
-			memberId: memberId,
-			viewRefId: targetId,
-			viewGroup: ViewGroup.MEMBER,
+		const search: T = {
+			_id: targetId,
+			memberStatus: {
+				$in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
+			},
 		};
 
-		const newView = await this.viewService.recordView(viewInput);
+		const targetMember = await this.memberModel.findOne(search).lean().exec();
+		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		if (newView) {
-			await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
-			targetMember.memberViews++;
+		if (memberId) {
+			const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER };
+			const newView = await this.viewService.recordView(viewInput);
+			if (newView) {
+				await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
+				targetMember.memberViews++;
+			}
 		}
+		return targetMember;
 	}
 
-	return targetMember as Member;
-}
 	
 	public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
 		const { text } = input.search;
