@@ -15,6 +15,9 @@ import { BoardArticleStatus } from '../../libs/enums/board-article.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { BoardArticleUpdate } from '../../libs/dto/board-article/board-article.update';
 import { lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
+import { LikeService } from '../like/like.service';
+import { LikeInput } from '../../libs/dto/like/like.input';
+import { LikeGroup } from '../../libs/enums/like.enum';
 
 @Injectable()
 export class BoardArticleService {
@@ -23,6 +26,7 @@ export class BoardArticleService {
 		private readonly boardArticleModel: Model<BoardArticle>,
 		private readonly memberService: MemberService,
 		private readonly viewService: ViewService,
+		private readonly likeService: LikeService,
 	) {}
 
 	public async createBoardArticle(memberId: ObjectId, input: BoardArticleInput): Promise<BoardArticle> {
@@ -45,42 +49,47 @@ export class BoardArticleService {
 	}
 
 	public async getBoardArticle(memberId: ObjectId | null, articleId: ObjectId): Promise<BoardArticle> {
-	const search: T = {
-		_id: articleId,
-		articleStatus: BoardArticleStatus.ACTIVE,
-	};
+    const search: T = {
+        _id: articleId,
+        articleStatus: BoardArticleStatus.ACTIVE,
+    };
 
-	const targetBoardArticle = await this.boardArticleModel.findOne(search).exec();
+    const targetBoardArticle = await this.boardArticleModel.findOne(search).exec();
 
-	if (!targetBoardArticle) {
-		throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-	}
+    if (!targetBoardArticle) {
+        throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    }
 
-	if (memberId) {
-		const viewInput = {
-			memberId: memberId,
-			viewRefId: articleId,
-			viewGroup: ViewGroup.ARTICLE,
-		};
+    if (memberId) {
+        const viewInput = {
+            memberId: memberId,
+            viewRefId: articleId,
+            viewGroup: ViewGroup.ARTICLE,
+        };
 
-		const newView = await this.viewService.recordView(viewInput);
+        const newView = await this.viewService.recordView(viewInput);
 
-		if (newView) {
-			await this.boardArticleStatsEditor({
-				_id: articleId,
-				targetKey: 'articleViews',
-				modifier: 1,
-			});
+        if (newView) {
+            await this.boardArticleStatsEditor({
+                _id: articleId,
+                targetKey: 'articleViews',
+                modifier: 1,
+            });
 
-			targetBoardArticle.articleViews++;
-		}
-	}
+            targetBoardArticle.articleViews++;
+        }
+        const likeInput = {
+            memberId: memberId,
+            likeRefId: articleId,
+            likeGroup: LikeGroup.ARTICLE,
+        };
+        targetBoardArticle.meLiked = await this.likeService.checkLikeExistence(likeInput);
+    }
 
-	targetBoardArticle.memberData = await this.memberService.getMember(null, targetBoardArticle.memberId);
+    targetBoardArticle.memberData = await this.memberService.getMember(memberId, targetBoardArticle.memberId);
 
-	return targetBoardArticle;
+    return targetBoardArticle;
 }
-
 	public async updateBoardArticle(memberId: ObjectId, input: BoardArticleUpdate): Promise<BoardArticle> {
 		const { _id, articleStatus } = input;
 
@@ -139,6 +148,32 @@ export class BoardArticleService {
 
 		return result[0];
 	}
+
+	public async likeTargetBoardArticle(memberId: ObjectId, likeRefId: ObjectId): Promise<BoardArticle> {
+	const target = await this.boardArticleModel
+		.findOne({ _id: likeRefId, articleStatus: BoardArticleStatus.ACTIVE })
+		.exec();
+
+	if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+	const input: LikeInput = {
+		memberId: memberId,
+		likeRefId: likeRefId,
+		likeGroup: LikeGroup.ARTICLE,
+	};
+
+	const modifier: number = await this.likeService.toggleLike(input);
+
+	const result = await this.boardArticleStatsEditor({
+		_id: likeRefId,
+		targetKey: 'articleLikes',
+		modifier: modifier,
+	});
+
+	if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
+
+	return result;
+}
 
 	/** ADMIN **/
 
