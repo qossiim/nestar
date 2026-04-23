@@ -259,7 +259,7 @@ export class PropertyService {
 			likeRefId: likeRefId,
 			likeGroup: LikeGroup.PROPERTY,
 		};
-
+ 
 		const modifier: number = await this.likeService.toggleLike(input);
 		9;
 		const result = await this.propertyStatsEditor({
