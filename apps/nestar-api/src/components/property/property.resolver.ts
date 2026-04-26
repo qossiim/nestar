@@ -7,12 +7,12 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { Properties, Property } from '../../libs/property/property';
-import { AgentPropertiesInquiry, AllPropertiesInquiry, PropertiesInquiry, PropertyInput } from '../../libs/property/property.input';
+import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput } from '../../libs/property/property.input';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 import { PropertyUpdate } from '../../libs/property/property.update';
 import { AuthGuard } from '../auth/guards/auth.guard';
-import { Member } from '../../libs/dto/member/member';
+
 
 
 @Resolver(() => Property)
@@ -62,6 +62,26 @@ export class PropertyResolver {
 	): Promise<Properties> {
 		console.log('Query: getProperties');
 		return await this.propertyService.getProperties(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Query(() => Properties)
+	public async getFavorites(
+		@AuthMember('_id') memberId: ObjectId,
+		@Args('input') input: OrdinaryInquiry,
+	): Promise<Properties> {
+		console.log('Query: getFavorites');
+		return await this.propertyService.getFavorites(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Query(() => Properties)
+	public async getVisited(
+		@AuthMember('_id') memberId: ObjectId,
+		@Args('input') input: OrdinaryInquiry,
+	): Promise<Properties> {
+		console.log('Query: getVisitedProperties');
+		return await this.propertyService.getVisited(memberId, input);
 	}
 
 	@Roles(MemberType.AGENT)

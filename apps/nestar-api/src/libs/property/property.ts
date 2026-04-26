@@ -84,7 +84,7 @@ export class Property {
 	memberData?: Member;
 
 	@Field(() => [MeLiked], { nullable: true })
-	myLiked?: MeLiked[];
+	meLiked?: MeLiked[];
 }
 
 @ObjectType()
