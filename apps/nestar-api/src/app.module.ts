@@ -8,6 +8,7 @@ import { AppResolver } from './app.resolver';
 import { ComponentsModule } from './components/components.module';
 import { DatabaseModule } from './database/database.module';
 import { T } from './libs/types/common';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
   imports: [ConfigModule.forRoot(), GraphQLModule.forRoot({
@@ -25,7 +26,7 @@ import { T } from './libs/types/common';
 				return graphQLFormattedError;
 			},
   }), ComponentsModule, // HTTP
-   DatabaseModule, // TCP
+   DatabaseModule, SocketModule, // TCP
 ],
   controllers: [AppController],
   providers: [AppService, AppResolver],
